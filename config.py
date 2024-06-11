@@ -18,7 +18,7 @@ Config = {
     "pooling_style":"max",
     "optimizer": "adam",
     "learning_rate": 1e-3,
-    "pretrain_model_path":r"/Users/henryzheng/Desktop/NLP/八斗学院/bert-base-chinese",
+    "pretrain_model_path":r"bert-base-chinese",
     "class_num" : 10,
     "seed": 987
 }
