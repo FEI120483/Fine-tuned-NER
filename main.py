@@ -13,7 +13,7 @@ from config import Config
 from model import Model, choose_optimizer
 from evaluate import Evaluator
 from loader import load_data
-from peft import get_peft_model,LoraConfig, TaskType, PrefixTuningConfig
+from peft import get_peft_model,LoraConfig, TaskType, PrefixTuningConfig, PromptEncoderConfig, PromptTuningConfig
 import pandas as pd
 
 logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -53,7 +53,11 @@ def main(config):
                 target_modules = ["query", "key", "value"]
             )
         elif tuning_tactics == "prefix_tuning":
-            peft_config = PrefixTuningConfig(task_type="TOKEN_CLS", num_virtual_tokens=10)
+            peft_config = PrefixTuningConfig(task_type = "TOKEN_CLS", num_virtual_tokens=10)
+        elif tuning_tactics == 'p_tuning':
+            peft_config = PromptEncoderConfig(task_type = "TOKEN_CLS", num_virtual_tokens = 10)
+        elif tuning_tactics == "prompt_tuning":
+            peft_config = PromptTuningConfig(task_type="TOKEN_CLS", num_virtual_tokens = 10)
         
         ft_model = get_peft_model(basic_model, peft_config)
         
@@ -82,7 +86,10 @@ def main(config):
 
                 outputs = ft_model(input_ids, attention_mask = attention_mask)
                 logits = outputs.logits
-                loss = loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
+                if logits.size(1) > labels.size(1):
+                    logits = logits[:, :labels.size(1), :]
+                logits = logits.view(-1, logits.size(1), logits.size(2))
+                loss = loss_fn(logits.reshape(-1, logits.size(-1)), labels.view(-1))
                 loss.backward()
                 optimizer.step()
                 train_loss.append(loss.item())
